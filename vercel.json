@@ -1,12 +1,6 @@
 {
-  "buildCommand": "pip install -r requirements.txt",
   "env": {
     "PYTHONUNBUFFERED": "1"
-  },
-  "functions": {
-    "api/**/*.py": {
-      "runtime": "python@3.11"
-    }
   },
   "regions": ["pdx1"],
   "github": {
