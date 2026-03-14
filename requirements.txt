@@ -1,0 +1,23 @@
+# ── Core ───────────────────────────────────────────────
+undetected-chromedriver>=3.5
+selenium>=4.20
+python-telegram-bot>=21.0
+
+# ── LLM (Ollama runs locally — no dependency needed) ──────────
+# Ollama communicates via REST, handled by aiohttp below
+
+# ── Google Workspace ───────────────────────────────────
+google-api-python-client>=2.130
+google-auth-oauthlib>=1.2
+
+# ── Memory / Vector DB ────────────────────────────────
+chromadb>=0.5
+# pinecone-client>=3.0   # uncomment if using Pinecone
+
+# ── Utilities ──────────────────────────────────────────
+pyyaml>=6.0
+python-dotenv>=1.0
+cryptography>=42.0
+
+# ── Safety / Monitoring ───────────────────────────────
+aiohttp>=3.9

@@ -1,0 +1,19 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "Jarvis Long-Term Memory",
+  "description": "JSON-LD context store for Jarvis conversation history and user preferences.",
+  "dateCreated": "2026-03-09",
+  "conversations": [],
+  "writing_style": {
+    "tone": "professional yet approachable",
+    "formality": "semi-formal",
+    "sample_phrases": [],
+    "vocabulary_preferences": []
+  },
+  "user_preferences": {
+    "notification_hours": {"start": 7, "end": 23},
+    "timezone": "Asia/Kolkata",
+    "platforms": ["x", "linkedin", "instagram"]
+  }
+}

@@ -1,0 +1,42 @@
+# directives.yaml — Machine-readable directive configuration
+
+briefing:
+  enabled: true
+  schedule: "0 8 * * *" # cron: every day at 08:00
+  sources:
+    - gmail
+    - calendar
+    - newsroom
+
+post_guard:
+  enabled: true
+  require_hitl: true
+  expiry_minutes: 60
+
+sentinel:
+  enabled: true
+  poll_interval_seconds: 60
+  urgent_keywords:
+    - urgent
+    - emergency
+    - ASAP
+    - help
+    - deadline
+    - critical
+
+session_health:
+  heartbeat_interval_seconds: 900 # 15 minutes
+  cookie_rotation_hours: 48
+
+newsroom:
+  keywords:
+    - "AI regulation"
+    - "OpenAI"
+    - "Antigravity"
+    - "startup funding"
+  max_tweets_per_keyword: 10
+
+ghostwriter:
+  model: "llama3.2"
+  max_tokens: 300
+  max_unread_threads: 5
