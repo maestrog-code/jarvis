@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis"
+version = "1.0.0"
+description = "Jarvis: Autonomous AI assistant for X, LinkedIn, and content management"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Maestro", email = "team@maestro.code"}
+]
+
+dependencies = [
+    "aiohttp>=3.9",
+    "python-telegram-bot>=20.0",
+    "anthropic>=0.25",
+    "httpx>=0.25",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "tweepy>=4.14",
+    "fastapi>=0.104",
+    "uvicorn>=0.24",
+    "pydantic>=2.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "black>=23.0",
+    "ruff>=0.1",
+]
+
+[project.scripts]
+jarvis = "jarvis.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["jarvis*", "api*"]
+
+# ── Vercel Python Deployment ───────────────────────────────────────
+# Vercel looks for an ASGI/WSGI entrypoint. This config specifies:
+# 1. The app variable to export (app = FastAPI instance in api/app.py)
+# 2. The module path (api.app)
+
+[tool.vercel]
+# Build command (optional)
+buildCommand = "pip install -r requirements.txt"
+
+# Python framework detection
+# Vercel will automatically detect fastapi from dependencies

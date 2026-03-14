@@ -21,3 +21,8 @@ cryptography>=42.0
 
 # ── Safety / Monitoring ───────────────────────────────
 aiohttp>=3.9
+
+# ── Web Framework (Vercel deployment) ──────────────────
+fastapi>=0.104
+uvicorn>=0.24
+pydantic>=2.0
