@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Activity, Network, Zap } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import { useJarvis } from '@/hooks/useJarvisContext'
 
 interface SystemStatus {
   status: string
@@ -12,42 +13,13 @@ interface SystemStatus {
 }
 
 export default function StatusPulse() {
-  const [systemStatus, setSystemStatus] = useState<SystemStatus>({
-    status: 'INITIALIZING',
-    connections: 0,
-    health: 0,
-  })
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-        const response = await fetch(`${apiUrl}/api/health`)
-        if (response.ok) {
-          const data = await response.json()
-          setSystemStatus({
-            status: 'ONLINE',
-            connections: 3,
-            health: Math.round(Math.random() * 30 + 70),
-          })
-        }
-      } catch (error) {
-        console.error('[v0] Status fetch failed:', error)
-        setSystemStatus({
-          status: 'OFFLINE',
-          connections: 0,
-          health: 0,
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  const { status, health, connected, error } = useJarvis()
+  
+  const systemStatus = {
+    status: connected ? (status === 'idle' ? 'ONLINE' : status.toUpperCase()) : 'OFFLINE',
+    connections: connected ? 3 : 0,
+    health: connected && !error ? 85 : 0,
+  }
 
   return (
     <Card variant="cyan">
@@ -64,7 +36,14 @@ export default function StatusPulse() {
               <Activity size={16} className="text-primary" />
               <span className="text-sm text-muted">Status</span>
             </div>
-            <Badge label={systemStatus.status} variant={systemStatus.status === 'ONLINE' ? 'success' : 'error'} />
+            <Badge 
+              label={systemStatus.status} 
+              variant={
+                systemStatus.status === 'ONLINE' ? 'success' : 
+                systemStatus.status === 'OFFLINE' ? 'error' : 
+                'default'
+              } 
+            />
           </div>
 
           {/* Connections */}

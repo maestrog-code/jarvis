@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Terminal } from 'lucide-react'
 import Card from '@/components/ui/Card'
+import { useJarvis } from '@/hooks/useJarvisContext'
 
 interface CommandLog {
   id: string
@@ -14,16 +15,8 @@ interface CommandLog {
 
 export default function CommandTerminal() {
   const [input, setInput] = useState('')
-  const [logs, setLogs] = useState<CommandLog[]>([
-    {
-      id: '0',
-      input: '/help',
-      output: 'Available commands: /status, /help, /drafts, /post x "message", /memory, /keywords',
-      timestamp: new Date().toLocaleTimeString(),
-      status: 'success',
-    },
-  ])
-  const [loading, setLoading] = useState(false)
+  const [logs, setLogs] = useState<CommandLog[]>([])
+  const { executeCommand, status, error } = useJarvis()
   const outputRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -46,45 +39,34 @@ export default function CommandTerminal() {
     }
 
     setLogs((prev) => [...prev, newLog])
-    setLoading(true)
+    const commandInput = input
+    setInput('')
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${apiUrl}/api/command`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: input }),
-      })
-
-      const data = await response.json()
-
+      await executeCommand(commandInput)
       setLogs((prev) =>
         prev.map((log) =>
           log.id === logId
             ? {
                 ...log,
-                output: data.response || data.error || 'No response',
-                status: response.ok ? 'success' : 'error',
+                output: `Command executed successfully`,
+                status: 'success',
               }
             : log
         )
       )
-    } catch (error) {
-      console.error('[v0] Command failed:', error)
+    } catch (err) {
       setLogs((prev) =>
         prev.map((log) =>
           log.id === logId
             ? {
                 ...log,
-                output: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                output: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
                 status: 'error',
               }
             : log
         )
       )
-    } finally {
-      setLoading(false)
-      setInput('')
     }
   }
 
@@ -123,10 +105,16 @@ export default function CommandTerminal() {
               </div>
             </div>
           ))}
-          {loading && (
+          {status === 'executing' && (
             <div className="flex items-center gap-2 text-muted">
               <span className="text-accent">$</span>
               <span className="animate-pulse">Processing...</span>
+            </div>
+          )}
+          {error && (
+            <div className="flex items-center gap-2 text-red-400">
+              <span className="text-accent">$</span>
+              <span>{error}</span>
             </div>
           )}
         </div>
@@ -138,12 +126,12 @@ export default function CommandTerminal() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Enter command (e.g., /status, /help, /post x 'Hello')"
-            disabled={loading}
+            disabled={status === 'executing'}
             className="flex-1 rounded border border-accent/30 bg-background/50 px-3 py-2 font-mono text-sm text-foreground placeholder-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={status === 'executing' || !input.trim()}
             className="rounded border border-accent/30 bg-accent/10 px-4 py-2 text-accent hover:bg-accent/20 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             <Send size={16} />

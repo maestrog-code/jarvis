@@ -3,6 +3,7 @@
 import { Twitter, Linkedin, Heart, MessageCircle, Share2 } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import { useJarvis } from '@/hooks/useJarvisContext'
 
 interface FeedItem {
   id: string
@@ -36,19 +37,11 @@ const mockFeed: FeedItem[] = [
     likes: 890,
     replies: 120,
   },
-  {
-    id: '3',
-    source: 'x',
-    author: 'Code Masters',
-    handle: '@codemasters_io',
-    text: 'Your reminder: API documentation is your best friend. Document early, document often.',
-    timestamp: '6 hours ago',
-    likes: 2100,
-    replies: 560,
-  },
 ]
 
 export default function SocialFeed() {
+  const { feed, refreshFeed } = useJarvis()
+  const displayFeed = feed.length > 0 ? feed : mockFeed
   return (
     <Card variant="gold">
       <div className="space-y-4">
@@ -58,7 +51,7 @@ export default function SocialFeed() {
         </div>
 
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {mockFeed.map((item) => (
+          {displayFeed.map((item: FeedItem) => (
             <div
               key={item.id}
               className="rounded border border-secondary/20 bg-secondary/5 p-3 hover:bg-secondary/10 transition-colors"

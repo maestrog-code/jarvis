@@ -84,6 +84,7 @@ async def help_cmd(_: Command) -> str:
         "`/sentinel on|off` — toggle IG monitor\n"
         "`/keywords add|remove <word>` — manage keywords\n"
         "`/kill` — emergency shutdown\n"
+        "`/agent <goal>` — autonomous multi-step tool use\n"
         "`/help` — this message"
     )
 
@@ -210,6 +211,37 @@ async def keywords_cmd(cmd: Command) -> str:
         with open(config_path, "w") as f:
             yaml.safe_dump(cfg, f)
         return f"➖ Removed `{word}` from sentinel keywords."
+
+
+@command("/agent")
+async def agent_cmd(cmd: Command) -> str:
+    """Agentic tool-use — autonomously plan and execute a multi-step goal.
+
+    Usage: /agent <goal>
+    Example: /agent Search for the latest AI news and summarise in 5 bullets
+    """
+    if not cmd.args:
+        return (
+            "⚠️ Usage: `/agent <goal>`\n"
+            "Example: `/agent Search for Python async best practices and summarise`"
+        )
+
+    goal = " ".join(cmd.args)
+    log.info("Agent goal received: %s", goal[:100])
+
+    from jarvis.agent.react_loop import run_agent
+
+    result = await run_agent(goal)
+
+    # Build a step summary header
+    step_count = len(result.steps)
+    tools_used = [s.action for s in result.steps if s.action and s.action != "DONE"]
+    tools_str = ", ".join(f"`{t}`" for t in tools_used) if tools_used else "none"
+
+    header = (
+        f"🤖 **Jarvis Agent** — _{step_count} step(s), tools: {tools_str}_\n\n"
+    )
+    return header + result.final_answer
 
 
 @command("/kill")

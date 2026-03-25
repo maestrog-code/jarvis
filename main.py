@@ -10,10 +10,19 @@ Usage::
     python -m jarvis.main
 """
 
+import sys
+import os
+from pathlib import Path
+
+# Fix import paths - ensure the parent directory is in sys.path
+# This allows 'from jarvis.xxx' to work regardless of how the script is launched.
+project_root = Path(__file__).resolve().parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 import asyncio
 import datetime
 import logging
-import os
 from dotenv import load_dotenv
 
 logging.basicConfig(

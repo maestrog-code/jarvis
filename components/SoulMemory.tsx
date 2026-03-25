@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Brain, Clock } from 'lucide-react'
 import Card from '@/components/ui/Card'
+import { useJarvis } from '@/hooks/useJarvisContext'
 
 interface MemoryLog {
   timestamp: string
@@ -10,63 +11,9 @@ interface MemoryLog {
   status: string
 }
 
-const mockMemoryLogs: MemoryLog[] = [
-  {
-    timestamp: '2024-03-14 14:32:15',
-    action: 'Posted to X: Market update thread',
-    status: 'success',
-  },
-  {
-    timestamp: '2024-03-14 13:15:42',
-    action: 'Analyzed LinkedIn engagement metrics',
-    status: 'success',
-  },
-  {
-    timestamp: '2024-03-14 12:08:33',
-    action: 'Generated briefing document',
-    status: 'success',
-  },
-  {
-    timestamp: '2024-03-14 11:45:12',
-    action: 'Parsed social media feed',
-    status: 'success',
-  },
-  {
-    timestamp: '2024-03-14 10:22:55',
-    action: 'System initialized',
-    status: 'success',
-  },
-]
-
-const soulConfig = `# J.A.R.V.I.S SOUL Configuration
-## Version: 1.0.0
-
-### Identity
-- Name: J.A.R.V.I.S (Just Another Remarkably Versatile Intelligence System)
-- Purpose: Autonomous social media management & content orchestration
-- Platform: X (Twitter) & LinkedIn
-
-### Capabilities
-- Real-time social listening
-- Autonomous content generation
-- Engagement optimization
-- Sentiment analysis
-- Trend forecasting
-
-### Safety Protocols
-- Daily message limits: 50
-- Content review enabled: true
-- Engagement filters: active
-- Rate limiting: 10 requests/min
-
-### Memory Management
-- Retention period: 30 days
-- Archive strategy: compression
-- Backup frequency: daily
-`
-
 export default function SoulMemory() {
   const [activeTab, setActiveTab] = useState<'soul' | 'memory'>('soul')
+  const { logs } = useJarvis()
 
   return (
     <Card className="col-span-full">
@@ -106,7 +53,31 @@ export default function SoulMemory() {
         {activeTab === 'soul' ? (
           <div className="space-y-2">
             <pre className="rounded border border-secondary/20 bg-background/50 p-4 font-mono text-xs text-foreground overflow-x-auto max-h-96 overflow-y-auto">
-              {soulConfig}
+              # J.A.R.V.I.S SOUL Configuration
+## Version: 1.0.0
+
+### Identity
+- Name: J.A.R.V.I.S (Just Another Remarkably Versatile Intelligence System)
+- Purpose: Autonomous social media management & content orchestration
+- Platform: X (Twitter) & LinkedIn
+
+### Capabilities
+- Real-time social listening
+- Autonomous content generation
+- Engagement optimization
+- Sentiment analysis
+- Trend forecasting
+
+### Safety Protocols
+- Daily message limits: 50
+- Content review enabled: true
+- Engagement filters: active
+- Rate limiting: 10 requests/min
+
+### Memory Management
+- Retention period: 30 days
+- Archive strategy: compression
+- Backup frequency: daily
             </pre>
             <button className="rounded border border-secondary/30 bg-secondary/10 px-4 py-2 text-xs text-secondary hover:bg-secondary/20 transition-colors">
               Edit Configuration
@@ -114,7 +85,7 @@ export default function SoulMemory() {
           </div>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {mockMemoryLogs.map((log, idx) => (
+            {logs.length > 0 ? logs.map((log: MemoryLog, idx: number) => (
               <div
                 key={idx}
                 className="flex items-start gap-3 rounded border border-secondary/20 bg-secondary/5 p-3 hover:bg-secondary/10 transition-colors"
@@ -127,10 +98,16 @@ export default function SoulMemory() {
                       {log.status}
                     </span>
                   </div>
-                  <p className="text-xs text-muted mt-1">{log.timestamp}</p>
+                  <p className="text-xs text-muted mt-1">{new Date(log.timestamp).toLocaleString()}</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center text-muted py-8">
+                <Clock size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No memory logs yet</p>
+                <p className="text-xs">Execute commands to see activity history</p>
+              </div>
+            )}
           </div>
         )}
       </div>
