@@ -7,7 +7,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios'
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const API_TIMEOUT = 30000 // 30 seconds
+const API_TIMEOUT = 600000 // 10 minutes (to allow slow CPU-based Ollama processing)
 
 // Agent Status Types
 export type AgentStatus = 'idle' | 'thinking' | 'executing' | 'success' | 'error' | 'offline'

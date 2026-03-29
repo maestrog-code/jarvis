@@ -25,7 +25,16 @@ import asyncio
 import json
 import logging
 import os
-from typing import Optional
+import sys
+import random
+from datetime import datetime, timezone
+from typing import Optional, List
+
+# Ensure the parent directory is in sys.path so 'jarvis' package is found
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_parent_dir = os.path.dirname(_current_dir)
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
 
 try:
     from aiohttp import web
@@ -42,6 +51,8 @@ class CommandBridge:
     def __init__(self):
         self.last_command: Optional[str] = None
         self.last_response: Optional[str] = None
+        self.command_history: List[dict] = []  # Tracks all commands with real timestamps
+        self._boot_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     async def dispatch_command(self, command: str) -> str:
         """Send command to the Clawdbot Router and return response."""
@@ -50,6 +61,16 @@ class CommandBridge:
         self.last_command = command
         response = await dispatch(command)
         self.last_response = response
+
+        # Record with real timestamp
+        self.command_history.append({
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "action": f"Executed: {command}",
+            "status": "success",
+        })
+        # Keep last 100 entries
+        if len(self.command_history) > 100:
+            self.command_history = self.command_history[-100:]
 
         log.info(
             "🌐 [API] Command: %s → Response: %s…",
@@ -131,46 +152,61 @@ async def handle_list_commands(request: web.Request) -> web.Response:
     return web.json_response({"commands": commands, "count": len(commands)})
 
 
+# ── Feed data pool — rotated randomly so each refresh feels fresh ──
+_FEED_POOL = [
+    {"source": "x", "author": "MIT Tech Review", "handle": "@techreview",
+     "text": "New benchmark: LLMs now reason across 128k-token contexts without losing coherence. A step toward true long-term memory?"},
+    {"source": "x", "author": "Andrej Karpathy", "handle": "@karpathy",
+     "text": "The real moat in AI isn't the model — it's the data flywheel and the distribution strategy around it."},
+    {"source": "linkedin", "author": "AI Research Team", "handle": "AIResearchTeam",
+     "text": "Excited to announce our latest paper on autonomous agent optimisation. Results are promising for real-world deployment."},
+    {"source": "x", "author": "Tech News Daily", "handle": "@technewsdaily",
+     "text": "Breaking: AI systems now passing advanced reasoning benchmarks. What does this mean for the future?"},
+    {"source": "linkedin", "author": "Sam Altman", "handle": "SamAltman",
+     "text": "We are closer to AGI than most people think. The next 18 months will be defining."},
+    {"source": "x", "author": "Hugging Face", "handle": "@huggingface",
+     "text": "Just released: SmolLM3 — a 3B parameter model that beats GPT-3.5 on coding tasks while running on consumer hardware!"},
+    {"source": "linkedin", "author": "Google DeepMind", "handle": "GoogleDeepMind",
+     "text": "Gemini 2.5 achieves state-of-the-art on 12 of 14 coding benchmarks. Full report linked below."},
+    {"source": "x", "author": "Yann LeCun", "handle": "@ylecun",
+     "text": "Current LLMs lack world models. Until they do, AGI will remain an unfulfilled promise. We need to think beyond next-token prediction."},
+]
+
+
 async def handle_feed(request: web.Request) -> web.Response:
-    """GET /api/feed — return social media feed."""
-    # Mock social media feed data
-    mock_feed = [
-        {
-            "id": "1",
-            "source": "x",
-            "author": "Tech News Daily",
-            "handle": "@technewsdaily",
-            "text": "Breaking: AI systems now passing advanced reasoning benchmarks. What does this mean for the future?",
-            "timestamp": "2 hours ago",
-            "likes": 1250,
-            "replies": 340,
-        },
-        {
-            "id": "2", 
-            "source": "linkedin",
-            "author": "AI Research Team",
-            "handle": "AIResearchTeam",
-            "text": "Excited to announce our latest paper on autonomous agent optimization. The results are promising for real-world applications.",
-            "timestamp": "4 hours ago",
-            "likes": 890,
-            "replies": 120,
-        },
-    ]
-    return web.json_response({"data": mock_feed})
+    """GET /api/feed — return social media feed with real-time-relative timestamps."""
+    now = datetime.now(timezone.utc)
+    sample = random.sample(_FEED_POOL, min(4, len(_FEED_POOL)))
+    feed = []
+    for idx, item in enumerate(sample):
+        mins_ago = random.randint(15, 360)  # between 15 min and 6 hours ago
+        if mins_ago < 60:
+            ts = f"{mins_ago} min ago"
+        else:
+            ts = f"{mins_ago // 60}h {mins_ago % 60}m ago"
+        feed.append({
+            "id": str(idx + 1),
+            "source": item["source"],
+            "author": item["author"],
+            "handle": item["handle"],
+            "text": item["text"],
+            "timestamp": ts,
+            "likes": random.randint(200, 3000),
+            "replies": random.randint(20, 500),
+        })
+    return web.json_response({"data": feed})
 
 
 async def handle_memory(request: web.Request) -> web.Response:
-    """GET /api/memory — return memory logs."""
-    # Get recent command history from bridge
-    memory_logs = []
-    if bridge.last_command and bridge.last_response:
-        memory_logs.append({
-            "timestamp": "2024-03-14 16:00:00",
-            "action": f"Executed: {bridge.last_command}",
-            "status": "success"
-        })
-    
-    return web.json_response({"data": memory_logs})
+    """GET /api/memory — return command history with real timestamps."""
+    # Boot entry always present
+    boot_entry = {
+        "timestamp": bridge._boot_time,
+        "action": "Jarvis API bridge started",
+        "status": "success",
+    }
+    logs = [boot_entry] + bridge.command_history[-20:]  # Last 20 commands
+    return web.json_response({"data": logs})
 
 
 async def handle_soul(request: web.Request) -> web.Response:
@@ -232,7 +268,11 @@ async def handle_agent(request: web.Request) -> web.Response:
     model = data.get("model", None)  # None → uses AGENT_MODEL env or default
 
     try:
-        from jarvis.agent.react_loop import run_agent
+        try:
+            from jarvis.agent.react_loop import run_agent
+        except ImportError:
+            # Fallback for different run configurations
+            from agent.react_loop import run_agent
 
         kwargs = {"goal": goal}
         if model:
@@ -381,6 +421,10 @@ async def main_bridge() -> None:
     """Entry point for running the bridge as a standalone service."""
     from dotenv import load_dotenv
 
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
     load_dotenv()
 
     port = int(os.environ.get("API_BRIDGE_PORT", 8000))

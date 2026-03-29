@@ -31,8 +31,9 @@ from jarvis.agent.tool_registry import call_tool, format_tools_for_prompt
 
 log = logging.getLogger("jarvis.agent.react_loop")
 
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-DEFAULT_MODEL = os.environ.get("AGENT_MODEL", "llama3.2")
+# Align with Jarvis defaults from .env
+OLLAMA_URL = os.environ.get("OLLAMA_URL") or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+DEFAULT_MODEL = os.environ.get("AGENT_MODEL") or os.environ.get("OLLAMA_MODEL", "llama3.2:latest")
 MAX_STEPS = int(os.environ.get("AGENT_MAX_STEPS", "10"))
 
 
@@ -86,29 +87,20 @@ class AgentResult:
 
 def _build_system_prompt() -> str:
     tools_str = format_tools_for_prompt()
-    return f"""You are Jarvis, an autonomous AI agent. You MUST complete the user's goal by reasoning step-by-step and using tools.
-
-AVAILABLE TOOLS:
+    return f"""You are Jarvis. Complete the goal using tools.
 {tools_str}
 
-RESPONSE FORMAT — you must respond in EXACTLY one of these two formats on every turn:
-
-Format 1 — use a tool:
-THOUGHT: <your reasoning about what to do next>
+FORMAT:
+THOUGHT: <reasoning>
 ACTION: <tool_name>
-INPUT: <JSON object with the tool's arguments, e.g. {{"query": "python async"}}>
-
-Format 2 — when goal is fully complete:
-THOUGHT: <final reasoning>
-DONE: <your complete final answer to the user>
+INPUT: <JSON>
+-- OR --
+THOUGHT: <reasoning>
+DONE: <final answer>
 
 RULES:
-- Always start with THOUGHT.
-- Never skip the ACTION or DONE line.
-- INPUT must be valid JSON.
-- Use tools as many times as needed (up to {MAX_STEPS} steps).
-- When you have enough information to answer, use DONE.
-- Be concise in THOUGHT. Be thorough in DONE.
+- Start with THOUGHT. Valid JSON in INPUT.
+- Max {MAX_STEPS} steps.
 """
 
 
@@ -126,7 +118,7 @@ async def _call_ollama(messages: list[dict], model: str) -> str:
         async with session.post(
             f"{OLLAMA_URL}/api/chat",
             json=payload,
-            timeout=aiohttp.ClientTimeout(total=120),
+            timeout=aiohttp.ClientTimeout(total=300),
         ) as resp:
             if resp.status != 200:
                 body = await resp.text()

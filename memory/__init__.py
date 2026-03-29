@@ -68,3 +68,56 @@ async def get_recent_context(n: int = 20) -> list[dict]:
     """Return the last ``n`` conversation entries."""
     store = _load_store()
     return store.get("conversations", [])[-n:]
+
+
+# ── Vector Memory (ChromaDB) ──────────────────────────────────────────────────
+
+_CHROMA_CLIENT = None
+_COLLECTION = None
+
+
+def _get_chroma():
+    """Lazy initialize ChromaDB client and collection."""
+    global _CHROMA_CLIENT, _COLLECTION
+    if _CHROMA_CLIENT is None:
+        try:
+            import chromadb
+            path = os.environ.get("CHROMA_DB_PATH", "./memory/chroma_db")
+            name = os.environ.get("CHROMA_COLLECTION_NAME", "jarvis-context")
+            _CHROMA_CLIENT = chromadb.PersistentClient(path=path)
+            _COLLECTION = _CHROMA_CLIENT.get_or_create_collection(name=name)
+        except Exception as e:
+            log.error("Failed to init ChromaDB: %s", e)
+            return None, None
+    return _CHROMA_CLIENT, _COLLECTION
+
+
+async def remember(text: str, metadata: dict = None) -> None:
+    """Store a text snippet in the vector database."""
+    _, collection = _get_chroma()
+    if not collection:
+        log.warning("ChromaDB not available, skipping remember.")
+        return
+
+    import uuid
+    collection.add(
+        documents=[text],
+        metadatas=[metadata or {}],
+        ids=[str(uuid.uuid4())]
+    )
+    log.info("Memory stored: %s...", text[:50])
+
+
+async def recall(query: str, n_results: int = 5) -> list[str]:
+    """Search for relevant past memories using vector similarity."""
+    _, collection = _get_chroma()
+    if not collection:
+        log.warning("ChromaDB not available, skipping recall.")
+        return []
+
+    results = collection.query(
+        query_texts=[query],
+        n_results=n_results
+    )
+    # Chroma query returns list of lists for documents
+    return results.get("documents", [[]])[0]

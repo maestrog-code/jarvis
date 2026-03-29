@@ -5,13 +5,20 @@ import random
 import logging
 import functools
 
-import undetected_chromedriver as uc
-from selenium.webdriver.chrome.options import Options
+log = logging.getLogger("jarvis.browser.core")
+
+try:
+    import undetected_chromedriver as uc
+    from selenium.webdriver.chrome.options import Options
+    _BROWSER_AVAILABLE = True
+except ImportError as _e:
+    log.warning("Browser not available: %s — skills requiring Chrome will fail gracefully.", _e)
+    uc = None  # type: ignore
+    _BROWSER_AVAILABLE = False
 
 from jarvis.browser.cookies import load_cookies, convert_cookies_to_selenium
 from jarvis.browser.ua_pool import pick_ua
 
-log = logging.getLogger("jarvis.browser.core")
 
 
 async def human_delay(low: float = 1.2, high: float = 4.5) -> None:
@@ -26,6 +33,11 @@ def _create_driver(headless: bool = True) -> uc.Chrome:
     Uses a real Chrome installation so Google doesn't flag it as
     an automation browser.
     """
+    if not _BROWSER_AVAILABLE:
+        raise RuntimeError(
+            "undetected_chromedriver is not installed. "
+            "Run: pip install undetected-chromedriver selenium"
+        )
     options = uc.ChromeOptions()
 
     if headless:
